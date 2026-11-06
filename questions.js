@@ -6,8 +6,18 @@
 const qState = {
   questions: [],   // neueste zuerst
   answers: [],     // nur die, die ich sehen darf
-  answeredBy: []   // wer die aktuelle Frage schon beantwortet hat
+  answeredBy: [],  // wer die aktuelle Frage schon beantwortet hat
+  unlockAt: null,  // Zeitpunkt der Freischaltung der nächsten Frage (Date) oder null
+  canAsk: false    // vom Server berechnet
 };
+let unlockTimer = null;
+
+// "Fr. 19:00 München · 12:00 Austin"
+function fmtUnlock(d) {
+  const muc = d.toLocaleString('de-DE', { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' });
+  const aus = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Chicago' });
+  return `${muc} Uhr München · ${aus} Uhr Austin`;
+}
 
 // ---------- kleine DOM-Helfer (Texte immer als textContent = sicher) ----------
 function el(tag, className, text) {
@@ -62,6 +72,11 @@ async function loadQuestions() {
   qState.answeredBy = [];
 
   const current = qState.questions[0];
+  const status = await sb.rpc('question_status');
+  const row = status.data && (Array.isArray(status.data) ? status.data[0] : status.data);
+  qState.canAsk = !!(row && row.can_ask);
+  qState.unlockAt = row && row.unlock_at ? new Date(row.unlock_at) : null;
+
   if (current) {
     const r = await sb.rpc('answered_by', { qid: current.id });
     if (!r.error && Array.isArray(r.data)) {
@@ -69,14 +84,19 @@ async function loadQuestions() {
     }
   }
 
+  // Zur Freischaltzeit automatisch neu laden, falls die App offen ist
+  clearTimeout(unlockTimer);
+  if (qState.unlockAt) {
+    const ms = qState.unlockAt - Date.now();
+    if (ms > 0 && ms < 26 * 3600 * 1000) unlockTimer = setTimeout(loadQuestions, ms + 2000);
+  }
+
   renderQuestions();
   renderHomeQuestion();
 }
 
 function canAsk() {
-  const current = qState.questions[0];
-  if (!current) return true;
-  return current.asked_by !== me.id && qState.answeredBy.length >= 2;
+  return qState.canAsk;
 }
 
 // ---------- Ansicht "Fragen" ----------
@@ -142,9 +162,16 @@ function renderQuestions() {
     c.append(ta, btn);
     ask.append(c);
   } else if (current) {
-    const text = current.asked_by === me.id
-      ? `${partner.name} stellt die nächste Frage, sobald ihr beide geantwortet habt.`
-      : 'Du stellst die nächste Frage, sobald ihr beide geantwortet habt.';
+    const myTurn = current.asked_by !== me.id;
+    const nextAsker = myTurn ? 'Du' : partner.name;
+    let text;
+    if (!qState.unlockAt) {
+      text = `Nächste Frage um 19:00 Uhr (München) – wenn ihr beide bis dahin geantwortet habt. Dann ${myTurn ? 'bist du' : `ist ${partner.name}`} dran.`;
+    } else if (qState.unlockAt > new Date()) {
+      text = `${nextAsker} ${myTurn ? 'kannst' : 'kann'} die nächste Frage ab ${fmtUnlock(qState.unlockAt)} stellen.`;
+    } else {
+      text = `${partner.name} ist mit der nächsten Frage dran.`;
+    }
     ask.append(el('p', 'empty', text));
   }
 
@@ -200,7 +227,7 @@ function renderHomeQuestion() {
   let action;
   if (!mine) action = 'Antworten →';
   else if (!partnerDone) action = `Warte auf ${partner.name} …`;
-  else if (canAsk()) action = 'Beide Antworten ansehen · du bist dran →';
+  else if (canAsk()) action = 'Neue Frage stellen →';
   else action = 'Beide Antworten ansehen →';
   $('homeQuestionAction').textContent = action;
 }
@@ -232,7 +259,7 @@ async function submitQuestion(textarea, btn) {
   btn.disabled = false;
   if (error) {
     console.error(error);
-    toast('Du bist gerade nicht mit Fragen dran.');
+    toast('Die neue Frage ist noch nicht freigeschaltet.');
     await loadQuestions();
     return;
   }
