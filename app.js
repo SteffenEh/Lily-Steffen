@@ -92,7 +92,7 @@ function showApp() {
 }
 
 // ---------------- Tabs ----------------
-const VIEWS = ['home', 'questions'];
+const VIEWS = ['home', 'questions', 'photos'];
 function switchTab(name) {
   VIEWS.forEach((v) => {
     const view = $('view-' + v);
@@ -136,6 +136,7 @@ async function enterApp(session) {
   subscribeLive();
   updatePushCard();
   loadQuestions();
+  loadPhotos();
 }
 
 function startOfToday() {
@@ -183,6 +184,15 @@ function subscribeLive() {
     })
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'answers' }, () => {
       loadQuestions();
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'photos' }, (payload) => {
+      if (payload.new && partner && payload.new.user_id === partner.id) {
+        toast(`${partner.name} hat das Foto des Tages gepostet`);
+      }
+      loadPhotos();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'photo_hearts' }, () => {
+      loadPhotos();
     })
     .subscribe();
 }
@@ -346,6 +356,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     loadCounts();
     loadQuestions();
+    loadPhotos();
   }
 });
 

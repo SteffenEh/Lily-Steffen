@@ -83,6 +83,14 @@
           <div class="card-action" id="homeQuestionAction"></div>
         </button>
 
+        <button type="button" id="homePhoto" class="glass card-btn">
+          <div class="card-head">
+            <span class="label">FOTO DES TAGES</span>
+          </div>
+          <div class="home-tiles" id="homePhotoTiles"></div>
+          <div class="card-action" id="homePhotoAction"></div>
+        </button>
+
         <section id="pushCard" class="glass push hidden">
           <div class="label">BENACHRICHTIGUNGEN</div>
           <p id="pushText">Bekomm eine Nachricht, wenn jemand an dich denkt.</p>
@@ -91,7 +99,7 @@
 
         <section class="glass coming">
           <div class="label">ALS NÄCHSTES</div>
-          <p>Foto des Tages, Call-Planer und eure Listen kommen in den nächsten Schritten.</p>
+          <p>Call-Planer und eure Listen kommen in den nächsten Schritten.</p>
         </section>
 
         <button type="button" id="logoutBtn" class="link-btn">Abmelden</button>
@@ -106,7 +114,27 @@
       <h3 class="section-title" id="qArchiveTitle">Archiv</h3>
       <div id="qArchive" class="archive"></div>
     </div>
+
+    <!-- ================= FOTOS ================= -->
+    <div id="view-photos" class="view hidden">
+      <h2 class="view-title">Foto des Tages</h2>
+      <p class="view-sub">Neuer Foto-Tag jeweils um 19:00 Uhr München · 12:00 Uhr Austin</p>
+      <div id="pToday"></div>
+      <h3 class="section-title" id="pAlbumTitle">Album</h3>
+      <div id="pAlbum" class="archive"></div>
+    </div>
   </main>
+
+  <input type="file" id="photoInput" accept="image/*" class="visually-hidden" aria-label="Foto auswählen">
+
+  <!-- Vollbild-Ansicht für Fotos -->
+  <div id="lightbox" class="lightbox hidden" role="dialog" aria-modal="true" aria-label="Foto">
+    <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Schließen">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+    <img id="lightboxImg" alt="">
+    <p id="lightboxCaption"></p>
+  </div>
 
   <!-- Tab-Leiste -->
   <nav id="tabs" class="tabs hidden" aria-label="Navigation">
@@ -118,6 +146,11 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <span>Fragen</span>
       <i class="badge hidden" id="qBadge"></i>
+    </button>
+    <button type="button" class="tab" data-tab="photos" aria-label="Album">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
+      <span>Album</span>
+      <i class="badge hidden" id="pBadge"></i>
     </button>
   </nav>
 
@@ -140,5 +173,6 @@
   <script src="config.js"></script>
   <script src="app.js"></script>
   <script src="questions.js"></script>
+  <script src="photos.js"></script>
 </body>
 </html>
