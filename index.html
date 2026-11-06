@@ -24,8 +24,8 @@
     <header class="top">
       <div class="brand">LILY · STEFFEN</div>
       <div class="avatars">
-        <span class="avatar lily" title="Lily">L</span>
-        <span class="avatar steffen" title="Steffen">S</span>
+        <span class="avatar lily" id="avatar-lily" title="Lily">L</span>
+        <span class="avatar steffen" id="avatar-steffen" title="Steffen">S</span>
       </div>
     </header>
 
@@ -48,9 +48,37 @@
       </div>
     </section>
 
-    <section class="glass coming">
-      <div class="label">ALS NÄCHSTES</div>
-      <p>„Ich denk an dich“, Call-Planer, Tagesfrage, Foto des Tages und eure Listen kommen in den nächsten Schritten.</p>
+    <!-- Login (nur sichtbar, wenn nicht angemeldet) -->
+    <section id="login" class="glass login hidden">
+      <div class="label">ANMELDEN</div>
+      <form id="loginForm" novalidate>
+        <label for="email">E-Mail</label>
+        <input id="email" name="email" type="email" autocomplete="username" inputmode="email" required>
+        <label for="password">Passwort</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <button type="submit" class="btn-primary" id="loginBtn">Anmelden</button>
+        <p id="loginError" class="error" role="alert"></p>
+      </form>
+    </section>
+
+    <!-- App-Bereich (nach dem Login) -->
+    <section id="app" class="app hidden">
+      <button type="button" id="thinkBtn" class="think">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/></svg>
+        <span>Ich denk an dich</span>
+      </button>
+      <div class="status" aria-live="polite">
+        <span class="dot" id="partnerDot"></span>
+        <span id="partnerText">…</span>
+      </div>
+      <div class="status-sub" id="myText"></div>
+
+      <section class="glass coming">
+        <div class="label">ALS NÄCHSTES</div>
+        <p>Push-Benachrichtigungen, Call-Planer, Tagesfrage, Foto des Tages und eure Listen kommen in den nächsten Schritten.</p>
+      </section>
+
+      <button type="button" id="logoutBtn" class="link-btn">Abmelden</button>
     </section>
   </main>
 
@@ -67,6 +95,10 @@
     </h1>
   </main>
 
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1"></script>
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
