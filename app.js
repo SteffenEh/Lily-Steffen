@@ -92,7 +92,7 @@ function showApp() {
 }
 
 // ---------------- Tabs ----------------
-const VIEWS = ['home', 'questions', 'photos'];
+const VIEWS = ['home', 'questions', 'photos', 'calls'];
 function switchTab(name) {
   VIEWS.forEach((v) => {
     const view = $('view-' + v);
@@ -137,6 +137,7 @@ async function enterApp(session) {
   updatePushCard();
   loadQuestions();
   loadPhotos();
+  loadCalls();
 }
 
 function startOfToday() {
@@ -193,6 +194,12 @@ function subscribeLive() {
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'photo_hearts' }, () => {
       loadPhotos();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'calls' }, (payload) => {
+      if (payload.eventType === 'INSERT' && payload.new && partner && payload.new.created_by === partner.id) {
+        toast(`${partner.name} hat ein neues Date eingetragen`);
+      }
+      loadCalls();
     })
     .subscribe();
 }
@@ -357,6 +364,7 @@ document.addEventListener('visibilitychange', () => {
     loadCounts();
     loadQuestions();
     loadPhotos();
+    loadCalls();
   }
 });
 

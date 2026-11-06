@@ -74,6 +74,15 @@
         </div>
         <div class="status-sub" id="myText"></div>
 
+        <button type="button" id="homeCall" class="glass card-btn">
+          <div class="card-head">
+            <span class="label">NÄCHSTES DATE</span>
+            <span class="who" id="homeCallRel"></span>
+          </div>
+          <div id="homeCallBody"></div>
+          <div class="card-action" id="homeCallAction"></div>
+        </button>
+
         <button type="button" id="homeQuestion" class="glass card-btn">
           <div class="card-head">
             <span class="label">TAGESFRAGE</span>
@@ -99,7 +108,7 @@
 
         <section class="glass coming">
           <div class="label">ALS NÄCHSTES</div>
-          <p>Call-Planer und eure Listen kommen in den nächsten Schritten.</p>
+          <p>Eure gemeinsamen Listen kommen im nächsten Schritt.</p>
         </section>
 
         <button type="button" id="logoutBtn" class="link-btn">Abmelden</button>
@@ -122,6 +131,17 @@
       <div id="pToday"></div>
       <h3 class="section-title" id="pAlbumTitle">Album</h3>
       <div id="pAlbum" class="archive"></div>
+    </div>
+
+    <!-- ================= CALLS ================= -->
+    <div id="view-calls" class="view hidden">
+      <h2 class="view-title">Calls &amp; Dates</h2>
+      <button type="button" id="cNewBtn" class="btn-primary">+ Neuer Termin</button>
+      <div id="cForm"></div>
+      <div id="cUpcoming" class="archive"></div>
+      <div id="cCalendar"></div>
+      <h3 class="section-title" id="cPastTitle">Vergangen</h3>
+      <div id="cPast" class="archive"></div>
     </div>
   </main>
 
@@ -152,6 +172,10 @@
       <span>Album</span>
       <i class="badge hidden" id="pBadge"></i>
     </button>
+    <button type="button" class="tab" data-tab="calls" aria-label="Calls">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>Calls</span>
+    </button>
   </nav>
 
   <!-- Wiedersehens-Ansicht (ab der Landung) -->
@@ -174,5 +198,6 @@
   <script src="app.js"></script>
   <script src="questions.js"></script>
   <script src="photos.js"></script>
+  <script src="calls.js"></script>
 </body>
 </html>
