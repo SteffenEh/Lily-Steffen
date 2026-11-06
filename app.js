@@ -111,6 +111,7 @@ async function enterApp(session) {
   showApp();
   await loadCounts();
   subscribeLive();
+  updatePushCard();
 }
 
 function startOfToday() {
@@ -169,6 +170,113 @@ async function sendThought() {
   setTimeout(() => btn.classList.remove('sent'), 900);
   toast(`An ${partner.name} gesendet`);
   loadCounts();
+
+  // Push an den Partner auslösen (läuft im Hintergrund)
+  sb.functions.invoke('notify', { body: { type: 'thought' } })
+    .then(({ error }) => { if (error) console.error('Push:', error); });
+}
+
+// ---------------- Push-Benachrichtigungen ----------------
+const isStandalone = () =>
+  window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const pushSupported = () =>
+  'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch((e) => console.error('SW:', e));
+}
+
+function base64UrlToUint8(b64) {
+  const padding = '='.repeat((4 - (b64.length % 4)) % 4);
+  const raw = atob((b64 + padding).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+}
+
+async function getOrCreateSubscription() {
+  const reg = await navigator.serviceWorker.ready;
+  const existing = await reg.pushManager.getSubscription();
+  if (existing) return existing;
+  return reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: base64UrlToUint8(cfg.VAPID_PUBLIC_KEY)
+  });
+}
+
+async function saveSubscription(sub) {
+  const j = sub.toJSON();
+  const { error } = await sb.from('push_subscriptions').upsert(
+    { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, user_id: me.id },
+    { onConflict: 'endpoint' }
+  );
+  if (error) throw error;
+}
+
+function setPushCard(text, showButton) {
+  $('pushCard').classList.remove('hidden');
+  $('pushText').textContent = text;
+  $('pushBtn').classList.toggle('hidden', !showButton);
+}
+
+async function updatePushCard() {
+  if (!me) return;
+
+  if (!pushSupported()) {
+    setPushCard(
+      isStandalone()
+        ? 'Benachrichtigungen werden hier nicht unterstützt. Bitte iOS aktualisieren.'
+        : 'Für Benachrichtigungen: In Safari auf Teilen → „Zum Home-Bildschirm“ tippen und die App von dort öffnen.',
+      false
+    );
+    return;
+  }
+
+  if (Notification.permission === 'denied') {
+    setPushCard('Benachrichtigungen sind blockiert. Erlaube sie in den iPhone-Einstellungen unter Mitteilungen → Lily & Steffen.', false);
+    return;
+  }
+
+  if (Notification.permission === 'granted') {
+    try {
+      await saveSubscription(await getOrCreateSubscription());
+      $('pushCard').classList.add('hidden');
+      return;
+    } catch (e) {
+      console.error('Push-Abo:', e);
+    }
+  }
+
+  setPushCard(`Bekomm eine Nachricht, wenn ${partner.name} an dich denkt.`, true);
+}
+
+$('pushBtn').addEventListener('click', async () => {
+  // Muss direkt durch den Tipp ausgelöst werden (iOS-Vorgabe)
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') {
+    updatePushCard();
+    return;
+  }
+  try {
+    $('pushBtn').disabled = true;
+    await saveSubscription(await getOrCreateSubscription());
+    $('pushCard').classList.add('hidden');
+    toast('Benachrichtigungen aktiv');
+  } catch (e) {
+    console.error('Push-Abo:', e);
+    toast('Aktivieren hat nicht geklappt.');
+  } finally {
+    $('pushBtn').disabled = false;
+  }
+});
+
+async function removeThisDevice() {
+  try {
+    if (!('serviceWorker' in navigator)) return;
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg && (await reg.pushManager.getSubscription());
+    if (sub) await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 // ---------------- Login / Logout ----------------
@@ -196,6 +304,7 @@ $('loginForm').addEventListener('submit', async (e) => {
 });
 
 $('logoutBtn').addEventListener('click', async () => {
+  await removeThisDevice(); // auf diesem Gerät keine Pushes mehr nach dem Abmelden
   await sb.auth.signOut();
   showLogin();
 });

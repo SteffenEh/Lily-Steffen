@@ -200,6 +200,10 @@ html, body {
 }
 .status-sub { text-align: center; font-size: 12px; color: var(--text-3); margin-top: -6px; }
 
+.push p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-2); }
+.push .btn-primary { width: 100%; }
+.btn-primary.hidden { display: none; }
+
 .link-btn {
   align-self: center;
   background: none;
