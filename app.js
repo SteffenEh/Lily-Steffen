@@ -79,11 +79,34 @@ function showLogin() {
   document.querySelectorAll('.avatar').forEach((a) => a.classList.remove('me'));
   $('app').classList.add('hidden');
   $('login').classList.remove('hidden');
+  $('tabs').classList.add('hidden');
+  document.body.classList.remove('has-tabs');
+  switchTab('home');
 }
 
 function showApp() {
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
+  $('tabs').classList.remove('hidden');
+  document.body.classList.add('has-tabs');
+}
+
+// ---------------- Tabs ----------------
+const VIEWS = ['home', 'questions'];
+function switchTab(name) {
+  VIEWS.forEach((v) => {
+    const view = $('view-' + v);
+    if (view) view.classList.toggle('hidden', v !== name);
+  });
+  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+
+// Push an den Partner auslösen (läuft im Hintergrund)
+function sendPush(type) {
+  sb.functions.invoke('notify', { body: { type } })
+    .then(({ error }) => { if (error) console.error('Push:', error); });
 }
 
 async function enterApp(session) {
@@ -112,6 +135,7 @@ async function enterApp(session) {
   await loadCounts();
   subscribeLive();
   updatePushCard();
+  loadQuestions();
 }
 
 function startOfToday() {
@@ -151,6 +175,15 @@ function subscribeLive() {
       }
       loadCounts();
     })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'questions' }, (payload) => {
+      if (payload.new && partner && payload.new.asked_by === partner.id) {
+        toast(`${partner.name} hat eine neue Frage gestellt`);
+      }
+      loadQuestions();
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'answers' }, () => {
+      loadQuestions();
+    })
     .subscribe();
 }
 
@@ -170,10 +203,7 @@ async function sendThought() {
   setTimeout(() => btn.classList.remove('sent'), 900);
   toast(`An ${partner.name} gesendet`);
   loadCounts();
-
-  // Push an den Partner auslösen (läuft im Hintergrund)
-  sb.functions.invoke('notify', { body: { type: 'thought' } })
-    .then(({ error }) => { if (error) console.error('Push:', error); });
+  sendPush('thought');
 }
 
 // ---------------- Push-Benachrichtigungen ----------------
@@ -313,7 +343,10 @@ $('thinkBtn').addEventListener('click', sendThought);
 
 // Beim Zurückkehren in die App Zähler aktualisieren
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') loadCounts();
+  if (document.visibilityState === 'visible') {
+    loadCounts();
+    loadQuestions();
+  }
 });
 
 // ---------------- Start ----------------
@@ -332,4 +365,5 @@ async function init() {
   else showLogin();
 }
 
-init();
+// Erst starten, wenn alle Skripte (auch questions.js) geladen sind
+document.addEventListener('DOMContentLoaded', init);
